@@ -48,7 +48,7 @@ const computeOperation = (a, b, o) => {
 }
 
 let chosen9Symbols
-let level = 1
+let level = Number(localStorage.getItem('level')) || 1;
 
 const generateOperation = () => {
     const symbols = pickSymbols()
@@ -154,6 +154,7 @@ const initGridListeners = () => {
 
                     await sleep(2000)
                     level++
+                    localStorage.setItem("level", level)
                     document.querySelector(".level").textContent = `Niveau ${level}`
                     document.getElementById('grid').style.display = "grid"
                     document.getElementById('action-row').style.display = "flex"
@@ -179,6 +180,8 @@ let operation
 let gridItems
 
 const newGame = () => {
+    document.querySelector(".level").textContent = `Niveau ${level}`
+    
     operation = generateOperation()
     console.log("operation", operation)
     // 9 items to put in the 3x3 grid of buttons
