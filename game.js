@@ -116,7 +116,13 @@ const initGridListeners = () => {
             console.log("click received " + btn.id)
 
             if (!pressableButtons.includes(btn.id)) {
-                console.log(`${btn.id} is not pressable anymore`)
+                if (pressedButtons[pressedButtons.length - 1].id == btn.id) {
+                    pressedButtons.pop()
+                    pressableButtons.push(btn.id)
+                    btn.style.background = null
+                } else {
+                    console.log(`${btn.id} is not pressable anymore`)
+                }
                 return
             }
 
@@ -182,7 +188,7 @@ let gridItems
 
 const newGame = () => {
     document.querySelector(".level").textContent = `Niveau ${level}`
-    
+
     operation = generateOperation()
     console.log("operation", operation)
     // 9 items to put in the 3x3 grid of buttons
