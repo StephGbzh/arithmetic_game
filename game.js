@@ -143,7 +143,8 @@ const initGridListeners = () => {
                 btn.style.background = null
 
                 pressedButtons.length = 0
-                pressableButtons.push(btn.id)
+                pressedButtons.push({ id: btn.id, value: btn.textContent })
+                btn.style.background = "red"
 
                 // VICTORY
                 if (operationResult == operation.result) {
