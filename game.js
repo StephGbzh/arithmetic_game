@@ -21,7 +21,7 @@ const removeElementFromArray = (arr, element) => arr.splice(arr.indexOf(element)
 const pickRandomNumber = () => Math.ceil(Math.random() * 10);
 
 // + - * /
-const operators = ['+', '-', 'x', '/']
+const operators = ['+', '-', 'x', ':']
 
 // choose randomly from the first 'max' elements of array 'arr'
 // return the index
@@ -56,7 +56,7 @@ const findNextOperation = (startNumber = 0) => {
         case '-': {
             // only one reduction allowed
             forbiddenOperators.push('-')
-            forbiddenOperators.push('/')
+            forbiddenOperators.push(':')
             // 2 to 10
             let candidates = Array.from({ length: 9 }, (_, i) => i + 2)
             candidates = removeArray2FromArray1(candidates, forbiddenNumbers)
@@ -84,10 +84,10 @@ const findNextOperation = (startNumber = 0) => {
             forbiddenNumbers.push(result)
             return { a, operator, b, result }
         }
-        case '/': {
+        case ':': {
             // only one reduction allowed
             forbiddenOperators.push('-')
-            forbiddenOperators.push('/')
+            forbiddenOperators.push(':')
             if (startNumber > 0) {
                 const divisors = optimizedDivisors(startNumber)
                 let candidates = removeArray2FromArray1(divisors, forbiddenNumbers)
@@ -146,7 +146,7 @@ const computeOperation = (a, b, o) => {
             result.valid = true
             break;
         // TODO avoid division by the same number as a previous multiplication
-        case '/':
+        case ':':
             result.value = a / b
             result.valid = a % b == 0
             break;
