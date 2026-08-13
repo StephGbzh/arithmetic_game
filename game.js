@@ -2,77 +2,191 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function optimizedDivisors(n) {
+    let result = [];
+    for (let i = 1; i <= Math.sqrt(n); i++) {
+        if (n % i == 0) {
+            result.push(i);
+            if (i !== n / i) {
+                result.push(n / i);
+            }
+        }
+    }
+    return result.filter((e, idx) => idx > 0 && e < n).sort((a, b) => a - b);
+}
+
+const removeElementFromArray = (arr, element) => arr.splice(arr.indexOf(element), 1)
+
 // 1 2 3 4 5 6 7 8 9 10
-const pickNumber = () => Math.ceil(Math.random() * 10);
+const pickRandomNumber = () => Math.ceil(Math.random() * 10);
 
 // + - * /
-// TODO handle '/'
-const operators = ['+', '-', 'x'/*, '/'*/]
+const operators = ['+', '-', 'x', '/']
 
-const pickOperator = (max) => operators[Math.floor(Math.random() * max)];
+// choose randomly from the first 'max' elements of array 'arr'
+// return the index
+const pickRandomElementIndexFromArray = (arr, max = arr.length) => Math.floor(Math.random() * Math.min(arr.length, max))
 
-// choose 6 numbers and 3 symbols to fill the 3x3 grid
-const pickSymbols = () => {
-    const numbers = []
-    for (let i = 0; i < 6; i++) {
-        numbers.push(pickNumber())
+const pickRandomElementFromArray = (arr, max = arr.length) => arr[Math.floor(Math.random() * Math.min(arr.length, max))]
+
+const pickRandomOperator = (max) => operators[pickRandomElementFromArray(operators, max)]
+
+const forbiddenNumbers = []
+const forbiddenOperators = []
+
+const removeArray2FromArray1 = (arr, arrToRemove) => arr.filter((e) => !arrToRemove.includes(e))
+
+const findNextOperation = (startNumber = 0) => {
+    const possibleOperators = removeArray2FromArray1(operators, forbiddenOperators)
+    const operator = pickRandomElementFromArray(possibleOperators)
+
+    switch (operator) {
+        case '+': {
+            // 1, ..., 10
+            let candidates = Array.from({ length: 10 }, (_, i) => i + 1)
+            candidates = removeArray2FromArray1(candidates, forbiddenNumbers)
+            const a = startNumber > 0 ? startNumber : pickRandomElementFromArray(candidates)
+            const b = pickRandomElementFromArray(candidates)
+            const result = a + b
+            forbiddenNumbers.push(a)
+            forbiddenNumbers.push(b)
+            forbiddenNumbers.push(result)
+            return { a, operator, b, result }
+        }
+        case '-': {
+            // only one reduction allowed
+            forbiddenOperators.push('-')
+            forbiddenOperators.push('/')
+            // 2 to 10
+            let candidates = Array.from({ length: 9 }, (_, i) => i + 2)
+            candidates = removeArray2FromArray1(candidates, forbiddenNumbers)
+            let a = startNumber > 0 ? startNumber : pickRandomElementFromArray(candidates)
+            candidates = Array.from({ length: 10 }, (_, i) => i + 1).filter(e => e < a)
+            candidates = removeArray2FromArray1(candidates, forbiddenNumbers)
+            let b = pickRandomElementFromArray(candidates)
+            const result = a - b
+            forbiddenNumbers.push(a)
+            forbiddenNumbers.push(b)
+            forbiddenNumbers.push(result)
+            return { a, operator, b, result }
+        }
+        case 'x': {
+            // only one multiplication allowed
+            forbiddenOperators.push('*')
+            // 2 to 10
+            let candidates = Array.from({ length: 9 }, (_, i) => i + 2)
+            candidates = removeArray2FromArray1(candidates, forbiddenNumbers)
+            let a = startNumber > 0 ? startNumber : pickRandomElementFromArray(candidates)
+            let b = pickRandomElementFromArray(candidates)
+            const result = a * b
+            forbiddenNumbers.push(a)
+            forbiddenNumbers.push(b)
+            forbiddenNumbers.push(result)
+            return { a, operator, b, result }
+        }
+        case '/': {
+            // only one reduction allowed
+            forbiddenOperators.push('-')
+            forbiddenOperators.push('/')
+            if (startNumber > 0) {
+                const divisors = optimizedDivisors(startNumber)
+                let candidates = removeArray2FromArray1(divisors, forbiddenNumbers)
+                if (candidates.length > 0) {
+                    const a = startNumber
+                    const b = pickRandomElementFromArray(candidates)
+                    const result = a / b
+                    forbiddenNumbers.push(a)
+                    forbiddenNumbers.push(b)
+                    forbiddenNumbers.push(result)
+                    return { a, operator, b, result }
+                }
+                return findNextOperation(startNumber)
+            } else {
+                // Only valid choices: 8 4, 8 2, 6 3, 6 2
+                let candidates = []
+                for (let couple of [[8, 4], [8, 2], [6, 3], [6, 2]]) {
+                    const rrr = removeArray2FromArray1(couple, forbiddenNumbers)
+                    if (rrr.length == 2) {
+                        candidates.push(couple)
+                    }
+                }
+                if (candidates.length > 0) {
+                    const [a, b] = pickRandomElementFromArray(candidates)
+                    const result = a / b
+                    forbiddenNumbers.push(a)
+                    forbiddenNumbers.push(b)
+                    forbiddenNumbers.push(result)
+                    return { a, operator, b, result }
+                }
+                return findNextOperation()
+            }
+        }
     }
-    // 3 operators:
-    // at least one +
-    // at least one [+ or -]
-    // then one random
-    const operators = []
-    operators.push('+')
-    operators.push(pickOperator(2))
-    // TODO set this to 4 when reinstating '/'
-    operators.push(pickOperator(3))
-    return { numbers, operators }
+    return { a: 0, operator: '+', b: 0, result: 0 }
 }
 
 const computeOperation = (a, b, o) => {
     console.log({ a, b, o })
+    a = parseInt(a)
+    b = parseInt(b)
+    let result = {}
     switch (o) {
-        case '+': return parseInt(a) + parseInt(b);
-        case '-': return Math.abs(parseInt(a) - parseInt(b));
+        case '+':
+            result.value = a + b;
+            result.valid = true
+            break;
+        case '-':
+            result.value = a - b;
+            result.valid = a >= b
+            break;
         // TODO avoid multiplication by 1
         // TODO avoid multiplication by the same number as a previous division
-        case 'x': return parseInt(a) * parseInt(b);
+        case 'x':
+            result.value = a * b;
+            result.valid = true
+            break;
         // TODO avoid division by the same number as a previous multiplication
-        // TODO avoid division that dos not return an integer 
-        // case '/': {
-        //     if (a%b == 0) {
-        //         return a/b
-        //     }
-        // }
+        case '/':
+            result.value = a / b
+            result.valid = a % b == 0
+            break;
     }
+    return result
 }
 
-let chosen9Symbols
 let level = Number(localStorage.getItem('level')) || 1;
 
 const generateOperation = () => {
-    const symbols = pickSymbols()
-    console.log(symbols)
-    chosen9Symbols = structuredClone(symbols);
-    let result;
     const solution = []
+    const symbols = [];
+    forbiddenNumbers.length = 0
+    forbiddenOperators.length = 0;
 
-    for (let i = 0; i < 3; i++) {
-        const a = symbols.numbers.shift()
-        const b = symbols.numbers.shift()
-        const o = symbols.operators.shift()
+    ({ a, operator, b, result } = findNextOperation())
+    symbols.push(...[a, operator, b])
+    solution.push(`${a} ${operator} ${b} = ${result}`);
 
-        result = computeOperation(a, b, o)
-        console.log({ result })
-        solution.push(`${a} ${o} ${b} = ${result}`)
-        symbols.numbers.unshift(result)
-    }
+    ({ a, operator, b, result } = findNextOperation(result))
+    symbols.push(...[operator, b])
+    solution.push(`${a} ${operator} ${b} = ${result}`);
+
+    ({ a, operator, b, result } = findNextOperation(result))
+    symbols.push(...[operator, b])
+    solution.push(`${a} ${operator} ${b} = ${result}`)
+
     console.log(symbols)
+    console.log(solution)
     // reroll when result is not nice
-    if (symbols.numbers[0] <= 10 || symbols.numbers[0] > 100) {
+    if (result <= 10 || result > 100) {
         return generateOperation()
     }
-    return { symbols: chosen9Symbols, result, solution }
+    let candidates = Array.from({ length: 10 }, (_, i) => i + 1)
+    candidates = removeArray2FromArray1(candidates, forbiddenNumbers)
+    const c = pickRandomElementFromArray(candidates)
+    const d = pickRandomElementFromArray(candidates)
+    symbols.push(c)
+    symbols.push(d)
+    return { symbols, result, solution }
 }
 
 // Source - https://stackoverflow.com/a/12646864
@@ -129,12 +243,23 @@ const initGridListeners = () => {
             // only allow pressing 3 buttons in this order: number then operator then number
             if ((!isNaN(btn.textContent) && (pressedButtons.length == 0 || pressedButtons.length == 2))
                 || (isNaN(btn.textContent) && pressedButtons.length == 1)) {
-                pressedButtons.push({ id: btn.id, value: btn.textContent })
+                pressedButtons.push(btn)
                 btn.style.background = "red"
-                pressableButtons.splice(pressableButtons.indexOf(btn.id), 1)
+                removeElementFromArray(pressableButtons, btn.id)
             }
 
             if (pressedButtons.length == 3) {
+                const operationResult = computeOperation(pressedButtons[0].textContent, pressedButtons[2].textContent, pressedButtons[1].textContent)
+                console.log({ operationResult })
+                if (!operationResult.valid) {
+                    pressedButtons.forEach(b => {
+                        b.style.background = null
+                        pressableButtons.push(b.id)
+                    })
+                    pressedButtons.length = 0
+                    return
+                }
+
                 const btn1 = document.querySelector(`button.btn#${pressedButtons[0].id}`)
                 btn1.textContent = ""
                 btn1.style.background = "grey"
@@ -143,17 +268,15 @@ const initGridListeners = () => {
                 btn2.textContent = ""
                 btn2.style.background = "grey"
 
-                const operationResult = computeOperation(pressedButtons[0].value, pressedButtons[2].value, pressedButtons[1].value)
-                console.log({ operationResult })
-                btn.textContent = operationResult
+                btn.textContent = operationResult.value
                 btn.style.background = null
 
                 pressedButtons.length = 0
-                pressedButtons.push({ id: btn.id, value: btn.textContent })
+                pressedButtons.push(btn)
                 btn.style.background = "red"
 
                 // VICTORY
-                if (operationResult == operation.result) {
+                if (operationResult.value == operation.result) {
                     document.querySelector("div#result").textContent = "BRAVO !"
 
                     document.getElementById('grid').style.display = "none"
@@ -192,15 +315,12 @@ const newGame = () => {
     operation = generateOperation()
     console.log("operation", operation)
     // 9 items to put in the 3x3 grid of buttons
-    gridItems = operation.symbols.numbers.concat(operation.symbols.operators)
+    gridItems = operation.symbols
     shuffleArray(gridItems)
     console.log("items", gridItems)
 
     initGridValues()
 }
-
-
-
 
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', () => {
