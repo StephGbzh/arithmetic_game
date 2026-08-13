@@ -176,8 +176,18 @@ const generateOperation = () => {
 
     console.log(symbols)
     console.log(solution)
+    
     // reroll when result is not nice
-    if (result <= 10 || result > 100) {
+    if (result <= 10) {
+        generations++
+        return generateOperation()
+    }
+    if (level <= 10 && result > 100) {
+        generations++
+        return generateOperation()
+    }
+    if (level > 10 && Math.abs(level - result) > level/15) {
+        generations++
         return generateOperation()
     }
     let candidates = Array.from({ length: 10 }, (_, i) => i + 1)
@@ -309,11 +319,14 @@ const initGridValues = () => {
 let operation
 let gridItems
 
+let generations
 const newGame = () => {
     document.querySelector(".level").textContent = `Niveau ${level}`
 
+    generations = 0
     operation = generateOperation()
     console.log("operation", operation)
+    console.log("generations", generations)
     // 9 items to put in the 3x3 grid of buttons
     gridItems = operation.symbols
     shuffleArray(gridItems)
