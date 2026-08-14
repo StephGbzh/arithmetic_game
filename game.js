@@ -91,6 +91,7 @@ const findNextOperation = (startNumber = 0) => {
             if (startNumber > 0) {
                 const divisors = optimizedDivisors(startNumber)
                 let candidates = removeArray2FromArray1(divisors, forbiddenNumbers)
+                candidates = candidates.filter(e => e <= 10)
                 if (candidates.length > 0) {
                     const a = startNumber
                     const b = pickRandomElementFromArray(candidates)
